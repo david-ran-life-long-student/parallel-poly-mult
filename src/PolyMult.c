@@ -49,14 +49,14 @@ void PolyMultGSQ(float *p, float *q, float *r, long d){
     for(i=0; i <= 2*d; i++)  // i really don't like this <= iteration checker, huge source of off by one error
       r[i] = 0;
 
-#pragma omp for private(j) schedule(dynamic, 100) nowait
+#pragma omp for private(j) nowait
     for(i=0; i <= d; i++) {
       for(j=0; j <= i; j++) {
         r[i] = r[i] + p[i-j] * q[j];
       }
     }
 
-#pragma omp for private(j) schedule(dynamic, 100)
+#pragma omp for private(j)
     for(i=d+1; i <= 2*d; i++) {
       for(j=d; j >= i-d; j-=1) {
         r[i] = r[i] + p[i-j] * q[j];
