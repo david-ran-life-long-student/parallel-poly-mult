@@ -56,17 +56,17 @@ class Execution:
 
     # PA1 TODO: implement the following 4 functions using taskset
     def execute_command_p_cores(self):
-        pass
+        return f"taskset 0x0000FFFF {self.execute_command()}"
 
     def execute_command_e_cores(self):
-        pass
+        return f"taskset 0xFFFF0000 {self.execute_command()}"
 
     # extra credit
     def execute_command_p_cores_no_smt(self):
-        pass
+        return f"taskset 0x00005555 {self.execute_command()}"
 
     def execute_command_4_p_cores_no_smt(self):
-        pass
+        return f"taskset 0x00000055 {self.execute_command()}"
 
 
 def experiment(program_name, args, thread_max, n_trials):
