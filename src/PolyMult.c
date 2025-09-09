@@ -24,15 +24,27 @@
 #define min(x, y)   ((x)>(y) ? (y) : (x))
 
 // TODO: Parallelize this function
-/* This function takes two one d array of size d and convolve them
+/* This function takes two 1d array of size d + 1 and convolve them
  * then stores the result in r, which has 2d space allocated
+ * algorithm illustration:
+ * len(a) or len(b) = d + 1
+ * len(r) = 2d + 1
+ * time series  j across i down
+ *                      sum
+ * 0,0                  r0
+ * 1,0  0,1             r1
+ * 2,0  1,1  0,2        r2
+ * ( j iteration is backwards after this point,
+ * but logically it should be like below )
+ *      2,1  1,2        r3
+ *           2,2        r4
  *
  */
 void PolyMultGSQ(float *p, float *q, float *r, long d){
   long i, j;  
 
   // zero out output array
-  for(i=0; i <= 2*d; i++)
+  for(i=0; i <= 2*d; i++)  // i really don't like this <= iteration checker, huge source of off by one error
     r[i] = 0;
 
   for(i=0; i <= d; i++) {

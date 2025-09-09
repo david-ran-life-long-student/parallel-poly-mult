@@ -64,3 +64,6 @@ PA1.tar: report.pdf src/PolyMult.c lib/collect_data.py
 
 clean:
 	rm -f bin/*
+
+scratch:
+	gcc src/scratch.cpp -o bin/scratch
