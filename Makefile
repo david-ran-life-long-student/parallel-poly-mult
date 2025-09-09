@@ -1,4 +1,4 @@
-CFLAGS=  -O3  -std=c99 -I/usr/include/malloc/ 
+CFLAGS=  -O3  -std=c99 -I/usr/include/malloc/ -no-pie
 LIBRARIES=-lm
 CC=gcc 
 AR=xiar
