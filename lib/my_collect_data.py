@@ -5,8 +5,6 @@ import subprocess
 import os
 import csv
 
-import pandas as pd
-
 def set_threads(thread_count):
     """
     :param thread_count: the number of threads to use (set via OMP_NUM_THREADS)
