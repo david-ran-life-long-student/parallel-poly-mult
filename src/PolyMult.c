@@ -44,7 +44,7 @@ void PolyMultGSQ(float *p, float *q, float *r, long d){
   long i, j;  
 #pragma omp parallel
   {
-#pragma omp for private(j) schdeule(dynamic, 1000) nowait
+#pragma omp for private(j) schedule(dynamic, 1000) nowait
     for(i=0; i <= d; i++) {
       r[i] = 0;
       for(j=0; j <= i; j++) {
@@ -52,7 +52,7 @@ void PolyMultGSQ(float *p, float *q, float *r, long d){
       }
     }
 
-#pragma omp for private(j) schdeule(dynamic, 1000)
+#pragma omp for private(j) schedule(dynamic, 1000)
     for(i=d+1; i <= 2*d; i++) {
       r[i] = 0;
       for(j=d; j >= i-d; j--) {
