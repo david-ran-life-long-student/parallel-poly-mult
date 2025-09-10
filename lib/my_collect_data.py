@@ -3,6 +3,7 @@
 import sys
 import subprocess
 import os
+import csv
 
 import pandas as pd
 
@@ -91,13 +92,13 @@ def experiment(command_func, thread_max, n_trials):
             elapsed_time = run_and_collect(command_func())
 
             if elapsed_time is not None:
-                thread_times.append(elapsed_time)
+                times.append(elapsed_time)
+                threads_used.append(threads)
                 print(f"Threads: {threads}, Time: {elapsed_time:.4f} seconds")
             else:
                 print(f"Failed to get execution time for {threads} threads.")
 
-        times.append(time_aggregation_logic(thread_times))
-        threads_used.append(threads)
+
 
     return threads_used, times
 
@@ -130,9 +131,19 @@ if __name__ == "__main__":
 
     exe = Execution(program_name, arguments)
 
-    threads, results = experiment(exe.execute_command, max_threads, n_trials)
+    # modes = ["", "_p_cores", "_e_cores", "_p_cores_no_smt", "_4_p_cores_no_smt"]
+    modes = [""]
+    for mode in modes:
+        threads, results = experiment(getattr(exe, "execute_command" + mode), max_threads, n_trials)
 
-    # save to a csv
-    pd.DataFrame(
-        {"thread_count": threads, "execution_time": results}
-    ).to_csv(f"./{sys.argv[1]}.csv")
+        # write to csv
+        with open(f"./{sys.argv[1]}{mode}.csv", "w", newline='') as my_csv:
+            writer = csv.writer(my_csv)
+            writer.writerow(['thread_count','execution_time'])
+            writer.writerows([(t, r)for t, r in zip(threads, results)])
+
+
+        # save to a csv
+    # pd.DataFrame(
+    #     {"thread_count": threads, "execution_time": results}
+    # ).to_csv(f"./{sys.argv[1]}.csv")
