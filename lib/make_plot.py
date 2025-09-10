@@ -37,7 +37,7 @@ def create_speedup_plot(csv_files, plot_title="Speedup Plot"):
     plt.plot(range(1, max_threads + 1), range(1, max_threads + 1), 'r--', label='Ideal Speedup')
 
     # Add plot elements
-    plt.title(plot_title)
+    plt.title(plot_title.split('/')[-1])
     plt.xlabel('Threads')
     plt.ylabel('Speedup')
     plt.grid(True)
