@@ -159,12 +159,19 @@ int main(int argc, char** argv) {
   elapsed_time2 = (((double) time.tv_sec) + ((double) time.tv_usec)/(1000*1000));
   elapsed_time1 = elapsed_time2 - elapsed_time1;
 
+#if defined DATA
+  // nothing? how to do not defined macro?
+#else
+
   // the optimzed seqential algorithm (provided .o file)
   PolyMultGold(A, B, D, degree, degree, 0, 0, 0, tune1, tune2, tune3);
-  
+
   gettimeofday(&time, NULL);
   elapsed_time3 = (((double) time.tv_sec) + ((double) time.tv_usec)/(1000*1000));
   elapsed_time2 = elapsed_time3 - elapsed_time2;
+
+#endif
+
 
   //**************************************************************************//
   /*               END OF THE POLYNOMIAL PRODUCT COMPUTATION                  */
@@ -184,6 +191,13 @@ int main(int argc, char** argv) {
       }
     }
   printf("The total number of errors is %ld\n", error_count);
+#elif defined DATA // timing for python test harness
+
+  // timing information
+
+  printf("Execution time for Current: \t%lf sec.\n", elapsed_time1);
+  printf("Execution time for Gold: \t%lf sec.\n", elapsed_time2);
+
 #else // then we are timing
 
   // timing information

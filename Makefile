@@ -1,4 +1,4 @@
-CFLAGS=  -O3  -std=c99 -I/usr/include/malloc/ 
+CFLAGS=  -O3  -std=c99 -I/usr/include/malloc/  -no-pie
 LIBRARIES=-lm
 CC=gcc 
 AR=xiar
@@ -8,6 +8,7 @@ FAST_OBJS = bin/PolyMultFAST.o lib/PolyMultGold.o
 
 
 TASKS = GSQ INQ OPQ BLQ DCQ # DCK DCNew
+DATA_TARGETS = $(patsubst %,bin/PolyMult%.data,$(TASKS))
 TIME_TARGETS = $(patsubst %,bin/PolyMult%.time,$(TASKS))
 TIME_PAR_TARGETS = $(patsubst %,bin/PolyMult%.time-par,$(TASKS))
 CHECK_TARGETS = $(patsubst %,bin/PolyMult%.check,$(TASKS))
@@ -15,7 +16,7 @@ CHECK_RAND_TARGETS = $(patsubst %,bin/PolyMult%.check-rand,$(TASKS))
 CHECK_PAR_TARGETS = $(patsubst %,bin/PolyMult%.check-par,$(TASKS))
 # one could add CHECK_PAR_RAND_TARGETS to be very thurough
 
-all: bin $(TIME_TARGETS) $(TIME_PAR_TARGETS) $(CHECK_TARGETS) $(CHECK_RAND_TARGETS) $(CHECK_PAR_TARGETS) $(FAST_TARGETS)
+all: bin $(DATA_TARGETS) $(TIME_TARGETS) $(TIME_PAR_TARGETS) $(CHECK_TARGETS) $(CHECK_RAND_TARGETS) $(CHECK_PAR_TARGETS) $(FAST_TARGETS)
 
 
 debug: CFLAGS =-DDEBUG -g -Wall -Wextra -std=c99 -I/usr/include/malloc/
@@ -23,6 +24,9 @@ debug: all
 
 
 # TASK BINARIES
+
+PolyMult%.data: $(OBJS) src/PolyMult.h
+	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -DDATA -D$(patsubst bin/PolyMult%.data,%,$@)
 
 PolyMult%.time: $(OBJS) src/PolyMult.h 
 	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -DRANDOM -D$(patsubst bin/PolyMult%.time,%,$@)
