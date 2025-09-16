@@ -23,46 +23,65 @@
 #define max(x, y)   ((x)>(y) ? (x) : (y))
 #define min(x, y)   ((x)>(y) ? (y) : (x))
 
-// TODO: Parallelize this function
-/* This function takes two 1d array of size d + 1 and convolve them
- * then stores the result in r, which has 2d space allocated
- * algorithm illustration:
- * len(a) or len(b) = d + 1
- * len(r) = 2d + 1
- * time series  j across i down
- *                      sum
- * 0,0                  r0
- * 1,0  0,1             r1
- * 2,0  1,1  0,2        r2
- * ( j iteration is backwards after this point,
- * but logically it should be like below )
- *      2,1  1,2        r3
- *           2,2        r4
- *
- */
+// same function as PA1. Add your parallelization here for better performance in leaf calls.
 void PolyMultGSQ(float *p, float *q, float *r, long d){
-  long i, j;  
-#pragma omp parallel
-  {
-    // zero out output array
-#pragma omp for
-    for(i=0; i <= 2*d; i++)  // i really don't like this <= iteration checker, huge source of off by one error
-      r[i] = 0;
+  long i, j;
 
-#pragma omp for private(j) schedule(dynamic, 1000) nowait
-    for(i=0; i <= d; i++) {
-      for(j=0; j <= i; j++) {
-        r[i] = r[i] + p[i-j] * q[j];
-      }
+// initialize r to zero
+  for(i=0; i <= 2*d; i+=1)
+    r[i] = 0;
+ 
+  // computation
+  for(i=0; i <= d; i+=1){
+    for(j=0; j <= i; j+=1) {
+      r[i] = r[i] + p[i-j] * q[j];
     }
+  }
 
-#pragma omp for private(j) schedule(dynamic, 1000)
-    for(i=d+1; i <= 2*d; i++) {
-      for(j=d; j >= i-d; j-=1) {
-        r[i] = r[i] + p[i-j] * q[j];
-      }
+  for(i=d+1; i <= 2*d; i+=1){
+    for(j=d; j >= i-d; j-=1) {
+      r[i] = r[i] + p[i-j] * q[j];
     }
   }
 }
 
+//  The other functions simply call the grade school quadratic function.  
+//  Your job is to edit/change them
+
+void PolyMultINQ(float *p, float *q, float *r, long d, long tune1, long tune2, long tune3){
+  PolyMultGSQ(p, q, r, d);
+  //  Same as Grade School, but with j as the outer loop (it's trickier than
+  //  just swapping i and j loops).
+}
+
+void PolyMultOPQ(float *p, float *q, float *r, long d, long tune1, long tune2, long tune3){
+  PolyMultGSQ(p, q, r, d);
+  //  Same as Grade School, but iterating over a square -- at each point i, j,
+  //  A[i]*q[j] is accumulated into the corret position in C).
+}
+
+void PolyMultBLQ(float *p, float *q, float *r, long d, long tune1, long tune2, long tune3){
+  PolyMultGSQ(p, q, r, d);
+  //  Same as OPQ, but tiled/blocked for better locality
+  //  Use tune1 as block size
+}
+
+void PolyMultDCQ(float* p, float* q, float* r, long d, long tune1, long tune2, long tune3) {
+  PolyMultGSQ(p, q, r, d);
+  // Uses divide and conquer algorithm from lecture
+  // Use tune2 as leaf size
+}
+
+// Ignore these for now
+
+/* void PolyMultDCNew(float* p, float* q, float* r, long d, long tune1, long tune2, long tune3) { */
+/*   PolyMultGSQ(p, q, r, d);  */
+/*   // Uses divide and conquer algorithm from lecture */
+/*   // Use tune2 as leaf size  */
+/* }  */
+
+
+/* void PolyMultDCK(float *p, float *q, float *r, long d, long stA, long stB, long tune1, long tune2, long tune3){ */
+/*   PolyMultGSQ(p, q, r, d, 0, 0, 0); */
+/* } */
 

@@ -20,6 +20,8 @@
 #include <sys/errno.h>
 #include <omp.h>
 
+#include "PolyMult.h"
+
 #define max(x, y)   ((x)>(y) ? (x) : (y))
 #define min(x, y)   ((x)>(y) ? (y) : (x))
 #define MAX_COEFF 100.0
@@ -30,13 +32,15 @@
 //  than some epsilon.  You may nead to tweak this, because floating point operations are
 //  not associtive, and Karatsuba, in particular, greatly changes the values
 //  leading to some drastic amount of error.
-#define EPSILON 1.0E-3
+#define EPSILON 1.0E-4
 
-// Signature: PolyMult (A,B,C,deg)
-void PolyMultGSQ(float*, float*, float*, long);
+//  Functions in the provided gold obj 
+void PolyMultGold(float*, float*, float*, long, long, long, long, long, long, long, long);
+void PolyMultGoldDCK(float *, float *, float *, long, long, long, long, long, long, long, long);
 
-//  Function in the provided gold obj 
-void PolyMultGold(float*, float*, float*, long);
+bool is_power_of_two(int n) {
+    return (n > 0) && ((n & (n - 1)) == 0);
+}
 
 //main
 int main(int argc, char** argv) {
@@ -45,8 +49,8 @@ int main(int argc, char** argv) {
 
   //Check number of args
 
-  if (argc != 2) {
-    printf("Error: One argument required.\n");
+  if (argc <= 1) {
+    printf("Number of arguments is smaller than expected.\n");
     printf("Expecting degree, d\n");
     exit(0);
   }
@@ -59,12 +63,33 @@ int main(int argc, char** argv) {
   long degree = atoi(val);
 
 
+  long tune1 =0, tune2 = 0, tune3 = 0;
+  //Additional args?
+  if(argc > 2)
+    {
+      val = argv[2];
+      tune1 = atoi(val);
+    }
+  if(argc > 3)
+    {
+      val = argv[3];
+      tune2 = atoi(val);
+    }
+  if(argc > 4)
+    {
+      val = argv[4];
+      tune3 = atoi(val);
+    }
+
   ///Parameter checking
-  if (!(degree >= 0)) {
-    printf("The degree is not valid.\n");
+  if (!is_power_of_two(degree+1)) {
+    printf("The degree must be one less than a power of two.\n");
     exit(-1);
   }
 
+  // tune1 is tile size, tune2 is leaf size for recursion 
+  // (leaf size must be greater then tile size, otherwise it is ignored, we just tile)
+  tune2 = max (tune1, tune2);
 
   long N = degree+1;  
 
@@ -84,7 +109,8 @@ int main(int argc, char** argv) {
   mallocCheck(D, (2*N-1), float*);
   
   //Input Initialization
-#if defined RANDOM
+
+#if defined (RANDOM)
   float x, y, tmp;
   for(n=0; n <= N-1; n+=1){
     A[n] = ((float) rand()/(float) (RAND_MAX))*MAX_COEFF;
@@ -113,21 +139,28 @@ int main(int argc, char** argv) {
   gettimeofday(&time, NULL);
   elapsed_time1 = (((double) time.tv_sec) + ((double) time.tv_usec)/(1000*1000));
 
+#if defined DCQ
+  PolyMultDCQ(A, B, C, degree, tune1, tune2, tune3);
+#endif
+#if defined BLQ
+  PolyMultBLQ(A, B, C, degree, tune1, tune2, tune3);
+#endif
+#if defined OPQ
+  PolyMultOPQ(A, B, C, degree, tune1, tune2, tune3);
+#endif
+#if defined INQ
+  PolyMultINQ(A, B, C, degree, tune1, tune2, tune3);
+#endif
 #if defined GSQ
-  PolyMultGSQ(A, B, C, degree);
+  PolyMultGSQ(A, B, C, degree, tune1, tune2, tune3);
 #endif
   
   gettimeofday(&time, NULL);
   elapsed_time2 = (((double) time.tv_sec) + ((double) time.tv_usec)/(1000*1000));
   elapsed_time1 = elapsed_time2 - elapsed_time1;
 
-#if defined DATA
-  // timing information
-  
-  printf("%lf\n", elapsed_time1);
-#else
   // the optimzed seqential algorithm (provided .o file)
-  PolyMultGold(A, B, D, degree);
+  PolyMultGold(A, B, D, degree, degree, 0, 0, 0, tune1, tune2, tune3);
   
   gettimeofday(&time, NULL);
   elapsed_time3 = (((double) time.tv_sec) + ((double) time.tv_usec)/(1000*1000));
@@ -151,7 +184,8 @@ int main(int argc, char** argv) {
       }
     }
   printf("The total number of errors is %ld\n", error_count);
-#endif
+#else // then we are timing
+
   // timing information
   
   printf("Execution time for Current: \t%lf sec.\n", elapsed_time1);

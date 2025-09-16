@@ -1,21 +1,21 @@
-CFLAGS=  -O3  -std=c99 -I/usr/include/malloc/ -no-pie
+CFLAGS=  -O3  -std=c99 -I/usr/include/malloc/ 
 LIBRARIES=-lm
 CC=gcc 
 AR=xiar
-OBJS = bin/PolyMult-seq.o lib/PolyMultGold-seq.o 
-PAR_OBJS = bin/PolyMult-par.o lib/PolyMultGold-par.o # Gold is still sequential
+OBJS = bin/PolyMult.o lib/PolyMultGold.o 
+PAR_OBJS = bin/PolyMultPAR.o lib/PolyMultGold.o # Gold is still sequential
 FAST_OBJS = bin/PolyMultFAST.o lib/PolyMultGold.o
 
 
-VERSIONS = GSQ
-TIME_TARGETS = $(patsubst %,bin/PolyMult%.seq,$(VERSIONS))
-TIME_PAR_TARGETS = $(patsubst %,bin/PolyMult%.par,$(VERSIONS))
-CHECK_TARGETS = $(patsubst %,bin/PolyMult%.check-seq,$(VERSIONS))
-CHECK_PAR_TARGETS = $(patsubst %,bin/PolyMult%.check-par,$(VERSIONS))
-DATA = $(patsubst %,bin/PolyMult%.data,$(VERSIONS))
+TASKS = GSQ INQ OPQ BLQ DCQ # DCK DCNew
+TIME_TARGETS = $(patsubst %,bin/PolyMult%.time,$(TASKS))
+TIME_PAR_TARGETS = $(patsubst %,bin/PolyMult%.time-par,$(TASKS))
+CHECK_TARGETS = $(patsubst %,bin/PolyMult%.check,$(TASKS))
+CHECK_RAND_TARGETS = $(patsubst %,bin/PolyMult%.check-rand,$(TASKS))
+CHECK_PAR_TARGETS = $(patsubst %,bin/PolyMult%.check-par,$(TASKS))
+# one could add CHECK_PAR_RAND_TARGETS to be very thurough
 
-
-all: bin $(TIME_TARGETS) $(TIME_PAR_TARGETS) $(CHECK_TARGETS) $(CHECK_PAR_TARGETS) $(DATA)
+all: bin $(TIME_TARGETS) $(TIME_PAR_TARGETS) $(CHECK_TARGETS) $(CHECK_RAND_TARGETS) $(CHECK_PAR_TARGETS) $(FAST_TARGETS)
 
 
 debug: CFLAGS =-DDEBUG -g -Wall -Wextra -std=c99 -I/usr/include/malloc/
@@ -24,34 +24,31 @@ debug: all
 
 # TASK BINARIES
 
-PolyMult%.seq: $(OBJS) src/PolyMult-wrapper.c
-	$(CC) src/PolyMult-wrapper.c -o $@ $(OBJS) $(CFLAGS) $(LIBRARIES) -D$(patsubst bin/PolyMult%.seq,%,$@)
+PolyMult%.time: $(OBJS) src/PolyMult.h 
+	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -DRANDOM -D$(patsubst bin/PolyMult%.time,%,$@)
 
-PolyMult%.par: $(PAR_OBJS) src/PolyMult-wrapper.c
-	$(CC) src/PolyMult-wrapper.c -o $@ $(PAR_OBJS) $(CFLAGS) $(LIBRARIES) -fopenmp -DPAR -DRANDOM -D$(patsubst bin/PolyMult%.par,%,$@)
+PolyMult%.time-par: $(PAR_OBJS) src/PolyMult.h 
+	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -fopenmp -DPAR -DRANDOM -D$(patsubst bin/PolyMult%.time-par,%,$@)
 
-PolyMult%.check-seq: $(OBJS) src/PolyMult-wrapper.c
-	$(CC) src/PolyMult-wrapper.c -o $@ $(OBJS) $(CFLAGS) $(LIBRARIES) -DCHECKING -D$(patsubst bin/PolyMult%.check-seq,%,$@)
+PolyMult%.check: $(OBJS) src/PolyMult.h 
+	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -DCHECKING -D$(patsubst bin/PolyMult%.check,%,$@)
 
-PolyMult%.check-par: $(OBJS) src/PolyMult-wrapper.c
-	$(CC) src/PolyMult-wrapper.c -o $@ $(PAR_OBJS) $(CFLAGS) $(LIBRARIES) -DCHECKING -fopenmp -DPAR -D$(patsubst bin/PolyMult%.check-par,%,$@)
+PolyMult%.check-rand: $(OBJS) src/PolyMult.h 
+	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -DRANDOM -DCHECKING -D$(patsubst bin/PolyMult%.check-rand,%,$@)
 
-PolyMult%.data: $(PAR_OBJS) src/PolyMult-wrapper.c
-	$(CC) src/PolyMult-wrapper.c -o $@ $(PAR_OBJS) $(CFLAGS) $(LIBRARIES) -fopenmp -DPAR -D$(patsubst bin/PolyMult%.data,%,$@) -DDATA
+PolyMult%.check-par: $(PAR_OBJS) src/PolyMult.h 
+	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -fopenmp -DPAR -DCHECKING -D$(patsubst bin/PolyMult%.check-par,%,$@)
 
 # OBJECT FILES
 
-bin/PolyMult-seq.o: src/PolyMult.c
-	$(CC) src/PolyMult.c -o bin/PolyMult-seq.o $(CFLAGS) $(LIBRARIES) -c
+bin/PolyMult.o: src/PolyMult.c
+	$(CC) src/PolyMult.c -o bin/PolyMult.o $(CFLAGS) $(LIBRARIES) -c
 
-bin/PolyMult-par.o: src/PolyMult.c
-	$(CC) src/PolyMult.c -o bin/PolyMult-par.o -fopenmp -DPAR $(CFLAGS) $(LIBRARIES) -c
+bin/PolyMultPAR.o: src/PolyMult.c
+	$(CC) src/PolyMult.c -o bin/PolyMultPAR.o -fopenmp -DPAR $(CFLAGS) $(LIBRARIES) -c
 
-#lib/PolyMultGold-seq.o: src/PolyMultGold.c
-#	$(CC) src/PolyMultGold.c -o lib/PolyMultGold-seq.o $(CFLAGS) $(LIBRARIES) -c
-
-#lib/PolyMultGold-par.o: src/PolyMultGold.c
-#	$(CC) src/PolyMultGold.c -o lib/PolyMultGold-par.o -fopenmp -DPAR $(CFLAGS) $(LIBRARIES) -c
+#lib/PolyMultGold.o: src/PolyMultGold.c
+#	$(CC) src/PolyMultGold.c -o lib/PolyMultGold.o $(CFLAGS) $(LIBRARIES) -c
 
 
 # MISC
@@ -59,11 +56,8 @@ bin/PolyMult-par.o: src/PolyMult.c
 bin:
 	mkdir -p bin
 
-PA1.tar: report.pdf src/PolyMult.c lib/collect_data.py
-	tar -cvf PA1.tar $^
+PA2.tar: report.pdf src/PolyMult.c lib/PolyMultGold.o
+	tar -cvf PA2.tar $^
 
 clean:
 	rm -f bin/*
-
-scratch:
-	gcc src/scratch.cpp -o bin/scratch
