@@ -99,28 +99,34 @@ void PolyMultBLQ(float *p, float *q, float *r, long d, long block_size, long tun
 
   // catch the divide by zero error
   if (block_size == 0) {
-    block_size = 1024; // 1024 is a large-ish number but guaranteed to fit inside the l1 cache
+    // 1024 is a large-ish number but guaranteed to fit inside the l1 cache
+    // remember we have to fit 2 array of d size and one of 2d for output
+    // so the total memory requirement is 4 (array) * 4 (bytes per float) * 1024 (block size)
+    // total goes to 16kb but remember cache lines also has some overhead so 32kb might not fit
+    block_size = 1024;
   }
+
+  // here we are accounting for the last block which may not be full
+  long block_count = (d + 1) % block_size ? (d + 1) / block_size + 1 : (d + 1) / block_size;
 
   #pragma omp parallel
   {
     // initialize return array
     #pragma omp for
-    for (long i=0; i <= 2*d; i++) {
+    for (long i=0; i < 2 * d + 1; i++) {
       r[i] = 0;
     }
 
     // block level iteration
     #pragma omp for reduction(+:r[: 2 * d + 1]) collapse(2)
-    for (block_i = 0; block_i < (d + 1) / block_size; block_i++) {
-      for (block_j = 0; block_j < (d + 1) / block_size; block_j++) {
+    for (block_i = 0; block_i < block_count; block_i++) {
+      for (block_j = 0; block_j < block_count; block_j++) {
 
         // within block iteration
-        for (long inner_i = 0; inner_i < block_size; inner_i++) {
-          for (long inner_j = 0; inner_j < block_size; inner_j++) {
-            // this is r[i + j] += p[i] * q[j] just wrapped in block indexing
-            r[block_i * block_size + inner_i + block_j * block_size + inner_j] += \
-                p[block_i * block_size + inner_i] * q[block_j * block_size + inner_j];
+        for (long inner_i = block_i * block_size; inner_i < min((block_i + 1) * block_size, d + 1); inner_i++) {
+          for (long inner_j = block_j * block_size; inner_j < min((block_j + 1) * block_size, d + 1); inner_j++) {
+
+            r[inner_i + inner_j] += p[inner_i] * q[inner_j];
           }
         }
       }
