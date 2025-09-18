@@ -195,8 +195,7 @@ int main(int argc, char** argv) {
 
   // timing information
 
-  printf("Execution time for Current: \t%lf sec.\n", elapsed_time1);
-  printf("Execution time for Gold: \t%lf sec.\n", elapsed_time2);
+  printf("%lf\n", elapsed_time1);
 
 #else // then we are timing
 

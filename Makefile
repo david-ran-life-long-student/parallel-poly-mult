@@ -25,8 +25,8 @@ debug: all
 
 # TASK BINARIES
 
-PolyMult%.data: $(OBJS) src/PolyMult.h
-	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -DDATA -D$(patsubst bin/PolyMult%.data,%,$@)
+PolyMult%.data: $(PAR_OBJS) src/PolyMult.h
+	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -DDATA -fopenmp -DPAR -DRANDOM -D$(patsubst bin/PolyMult%.data,%,$@)
 
 PolyMult%.time: $(OBJS) src/PolyMult.h 
 	$(CC) src/PolyMult-wrapper.c -o $@ $^ $(CFLAGS) $(LIBRARIES) -DRANDOM -D$(patsubst bin/PolyMult%.time,%,$@)
