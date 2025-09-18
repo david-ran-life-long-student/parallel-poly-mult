@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
   long degree = atoi(val);
 
 
-  long tune1 =0, tune2 = 0, tune3 = 0;
+  long tune1 = 0, tune2 = 0, tune3 = 0;
   //Additional args?
   if(argc > 2)
     {

@@ -77,26 +77,56 @@ void PolyMultINQ(float *p, float *q, float *r, long d, long tune1, long tune2, l
 void PolyMultOPQ(float *p, float *q, float *r, long d, long tune1, long tune2, long tune3){
   // square iteration, store results diagonally
   long i;
-#pragma omp parallel
+  #pragma omp parallel
   {
-#pragma omp for
-    for (i=0; i <= 2*d; i++) {
+    #pragma omp for
+    for (i=0; i < 2*d + 1; i++) {
       r[i] = 0;
     }
 
-#pragma omp for reduction(+:r[: 2 * d + 1]) collapse(2)
-    for (i = 0; i <= d; i++) {
-      for (long j = 0; j <= d; j++) {
+    #pragma omp for reduction(+:r[: 2 * d + 1]) collapse(2)
+    for (i = 0; i < d + 1; i++) {
+      for (long j = 0; j < d + 1; j++) {
         r[i + j] += p[i] * q[j];
       }
     }
   }
 }
 
-void PolyMultBLQ(float *p, float *q, float *r, long d, long tune1, long tune2, long tune3){
-  PolyMultGSQ(p, q, r, d);
-  //  Same as OPQ, but tiled/blocked for better locality
-  //  Use tune1 as block size
+void PolyMultBLQ(float *p, float *q, float *r, long d, long block_size, long tune2, long tune3){
+  // square iteration, store results diagonally
+  long block_i, block_j;
+
+  // catch the divide by zero error
+  if (block_size == 0) {
+    block_size = 1024; // 1024 is a large-ish number but guaranteed to fit inside the l1 cache
+  }
+
+  #pragma omp parallel
+  {
+    // initialize return array
+    #pragma omp for
+    for (long i=0; i <= 2*d; i++) {
+      r[i] = 0;
+    }
+
+    // block level iteration
+    #pragma omp for reduction(+:r[: 2 * d + 1]) collapse(2)
+    for (block_i = 0; block_i < (d + 1) / block_size; block_i++) {
+      for (block_j = 0; block_j < (d + 1) / block_size; block_j++) {
+
+        // within block iteration
+        for (long inner_i = 0; inner_i < block_size; inner_i++) {
+          for (long inner_j = 0; inner_j < block_size; inner_j++) {
+            // this is r[i + j] += p[i] * q[j] just wrapped in block indexing
+            r[block_i * block_size + inner_i + block_j * block_size + inner_j] += \
+                p[block_i * block_size + inner_i] * q[block_j * block_size + inner_j];
+          }
+        }
+      }
+    }
+
+  }
 }
 
 void PolyMultDCQ(float* p, float* q, float* r, long d, long tune1, long tune2, long tune3) {
